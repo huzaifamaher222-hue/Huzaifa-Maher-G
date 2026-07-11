@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ShoppingBag, Lock, Truck, CreditCard, Sparkles, Check, ChevronDown, ShieldCheck, Box, RefreshCw, Star, AlertCircle, MapPin, MessageCircle } from 'lucide-react';
+import { doc, setDoc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { PAKISTANI_CITIES } from '../data';
 import { Order } from '../types';
 import straightenerHero from '../assets/images/straightener_hero_1783762299972.jpg';
@@ -105,7 +107,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onOrderSuccess }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) {
       // Scroll to first error smoothly
@@ -117,37 +119,58 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onOrderSuccess }) => {
 
     setIsSubmitting(true);
 
-    // Simulate reliable network order booking
-    setTimeout(() => {
-      const orderId = 'SSW-' + Math.floor(100000 + Math.random() * 900000);
-      const newOrder: Order = {
+    const orderId = 'SSW-' + Math.floor(100000 + Math.random() * 900000);
+    const mapsLink = gpsLink || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address + ', ' + city)}`;
+    
+    const newOrder: Order = {
+      id: orderId,
+      name,
+      phone,
+      city,
+      address,
+      quantity,
+      totalPrice: SALE_PRICE * quantity,
+      status: 'Pending',
+      createdAt: new Date().toLocaleString(),
+      isWhatsApp: false,
+      gpsLink: mapsLink
+    };
+
+    try {
+      // Save order to Firestore
+      await setDoc(doc(db, 'orders', orderId), {
         id: orderId,
         name,
         phone,
-        city,
-        address,
-        quantity,
+        productName: 'Mini Ceramic Hair Straightener',
         totalPrice: SALE_PRICE * quantity,
+        address,
+        city,
+        gpsLink: mapsLink,
         status: 'Pending',
-        createdAt: new Date().toLocaleString()
-      };
+        createdAt: newOrder.createdAt,
+        isWhatsApp: false
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `orders/${orderId}`);
+    }
 
-      // Store in localStorage for admin tracking
-      const existingOrdersStr = localStorage.getItem('starshines_orders');
-      const existingOrders: Order[] = existingOrdersStr ? JSON.parse(existingOrdersStr) : [];
-      localStorage.setItem('starshines_orders', JSON.stringify([newOrder, ...existingOrders]));
+    // Store in localStorage for admin tracking
+    const existingOrdersStr = localStorage.getItem('starshines_orders');
+    const existingOrders: Order[] = existingOrdersStr ? JSON.parse(existingOrdersStr) : [];
+    localStorage.setItem('starshines_orders', JSON.stringify([newOrder, ...existingOrders]));
 
-      onOrderSuccess(newOrder);
-      setIsSubmitting(false);
+    onOrderSuccess(newOrder);
+    setIsSubmitting(false);
 
-      // Reset form variables
-      setName('');
-      setPhone('');
-      setCity('');
-      setCitySearch('');
-      setAddress('');
-      setQuantity(1);
-    }, 1200);
+    // Reset form variables
+    setName('');
+    setPhone('');
+    setCity('');
+    setCitySearch('');
+    setAddress('');
+    setQuantity(1);
+    setGpsLink('');
   };
 
   const handleGetGps = () => {
@@ -173,7 +196,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onOrderSuccess }) => {
     );
   };
 
-  const handleWhatsAppOrder = (e: React.MouseEvent) => {
+  const handleWhatsAppOrder = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!validate()) {
       // Scroll to first error smoothly
@@ -214,8 +237,28 @@ Please confirm my order.`;
       totalPrice: SALE_PRICE * quantity,
       status: 'Pending',
       createdAt: new Date().toLocaleString(),
-      isWhatsApp: true
+      isWhatsApp: true,
+      gpsLink: mapsLink
     };
+
+    try {
+      // Save order to Firestore
+      await setDoc(doc(db, 'orders', orderId), {
+        id: orderId,
+        name,
+        phone,
+        productName: 'Mini Ceramic Hair Straightener',
+        totalPrice: SALE_PRICE * quantity,
+        address,
+        city,
+        gpsLink: mapsLink,
+        status: 'Pending',
+        createdAt: newOrder.createdAt,
+        isWhatsApp: true
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `orders/${orderId}`);
+    }
 
     const existingOrdersStr = localStorage.getItem('starshines_orders');
     const existingOrders: Order[] = existingOrdersStr ? JSON.parse(existingOrdersStr) : [];

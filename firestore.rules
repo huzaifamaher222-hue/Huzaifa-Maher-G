@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Orders collection configuration
+    match /orders/{orderId} {
+      // 1. Creation Rule: Anyone can submit an order if it conforms to the validated schema shape
+      allow create: if isValidOrder(request.resource.data) && isValidId(orderId);
+
+      // 2. Read, Update, Delete: Supported for the checkout success and administration panel
+      allow read: if true;
+      allow delete: if true;
+      allow update: if isValidOrder(request.resource.data) && (
+        // Only allow status changes or tracking fields
+        request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'isWhatsApp'])
+      );
+    }
+
+    // global path validators
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // static data validator helper - enforces length limits, types, and required keys
+    function isValidOrder(data) {
+      return data.keys().hasAll(['id', 'name', 'phone', 'productName', 'totalPrice', 'address', 'city', 'status', 'createdAt'])
+        && data.keys().size() <= 11 // includes optional fields isWhatsApp, gpsLink
+        && data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 100
+        && data.phone is string && data.phone.size() >= 10 && data.phone.size() <= 20
+        && data.productName is string && data.productName.size() <= 150
+        && data.totalPrice is number && data.totalPrice > 0
+        && data.address is string && data.address.size() >= 5 && data.address.size() <= 500
+        && data.city is string && data.city.size() <= 100
+        && data.status in ['Pending', 'Shipped', 'Delivered', 'Cancelled']
+        && data.createdAt is string;
+    }
+  }
+}

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Database, Trash2, Sliders, RefreshCw, PhoneCall, MapPin } from 'lucide-react';
+import { collection, getDocs, deleteDoc, updateDoc, doc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { Order } from '../types';
 
 interface MerchantAdminProps {
@@ -11,39 +13,121 @@ export const MerchantAdmin: React.FC<MerchantAdminProps> = ({ isOpen, onClose })
   const [orders, setOrders] = useState<Order[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [cityFilter, setCityFilter] = useState<string>('All');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const loadOrders = () => {
-    const stored = localStorage.getItem('starshines_orders');
-    if (stored) {
-      setOrders(JSON.parse(stored));
-    } else {
-      // Seed default orders if empty to make the admin dashboard look beautiful initially
-      const seedOrders: Order[] = [
-        {
-          id: 'SSW-412855',
-          name: 'Zainab Fatima',
-          phone: '03214569871',
-          city: 'Lahore',
-          address: 'House 42, Block H-3, Johar Town, near Emporium Mall',
-          quantity: 2,
-          totalPrice: 2798,
-          status: 'Delivered',
-          createdAt: new Date(Date.now() - 48 * 3600000).toLocaleString()
-        },
-        {
-          id: 'SSW-963524',
-          name: 'Sumbul Raza',
-          phone: '03004128552',
-          city: 'Karachi',
-          address: 'Flat A-102, Sumya Heights, Block 13-D, Gulshan-e-Iqbal',
-          quantity: 1,
-          totalPrice: 1399,
-          status: 'Shipped',
-          createdAt: new Date(Date.now() - 24 * 3600000).toLocaleString()
+  const loadOrders = async () => {
+    setIsLoading(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, 'orders'));
+      const fbOrders: Order[] = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        fbOrders.push({
+          id: data.id,
+          name: data.name,
+          phone: data.phone,
+          city: data.city,
+          address: data.address,
+          quantity: data.quantity || 1,
+          totalPrice: data.totalPrice,
+          status: data.status,
+          createdAt: data.createdAt,
+          isWhatsApp: data.isWhatsApp,
+          gpsLink: data.gpsLink
+        });
+      });
+
+      // Sort by date/time (newest first)
+      fbOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      if (fbOrders.length > 0) {
+        setOrders(fbOrders);
+        localStorage.setItem('starshines_orders', JSON.stringify(fbOrders));
+      } else {
+        // Fallback to local storage if Firestore is empty
+        const stored = localStorage.getItem('starshines_orders');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setOrders(parsed);
+          // Sync existing localStorage orders to Firestore
+          for (const order of parsed) {
+            try {
+              await setDoc(doc(db, 'orders', order.id), {
+                id: order.id,
+                name: order.name,
+                phone: order.phone,
+                productName: 'Mini Ceramic Hair Straightener',
+                totalPrice: order.totalPrice,
+                address: order.address,
+                city: order.city,
+                gpsLink: order.gpsLink || '',
+                status: order.status,
+                createdAt: order.createdAt,
+                isWhatsApp: !!order.isWhatsApp
+              });
+            } catch (e) {
+              console.error("Error syncing local order to firestore:", e);
+            }
+          }
+        } else {
+          // Seed default orders if both are empty to make the dashboard look gorgeous
+          const seedOrders: Order[] = [
+            {
+              id: 'SSW-412855',
+              name: 'Zainab Fatima',
+              phone: '03214569871',
+              city: 'Lahore',
+              address: 'House 42, Block H-3, Johar Town, near Emporium Mall',
+              quantity: 2,
+              totalPrice: 2798,
+              status: 'Delivered',
+              createdAt: new Date(Date.now() - 48 * 3600000).toLocaleString()
+            },
+            {
+              id: 'SSW-963524',
+              name: 'Sumbul Raza',
+              phone: '03004128552',
+              city: 'Karachi',
+              address: 'Flat A-102, Sumya Heights, Block 13-D, Gulshan-e-Iqbal',
+              quantity: 1,
+              totalPrice: 1399,
+              status: 'Shipped',
+              createdAt: new Date(Date.now() - 24 * 3600000).toLocaleString()
+            }
+          ];
+          localStorage.setItem('starshines_orders', JSON.stringify(seedOrders));
+          setOrders(seedOrders);
+          
+          // Save seed orders to Firestore
+          for (const order of seedOrders) {
+            try {
+              await setDoc(doc(db, 'orders', order.id), {
+                id: order.id,
+                name: order.name,
+                phone: order.phone,
+                productName: 'Mini Ceramic Hair Straightener',
+                totalPrice: order.totalPrice,
+                address: order.address,
+                city: order.city,
+                gpsLink: order.gpsLink || '',
+                status: order.status,
+                createdAt: order.createdAt,
+                isWhatsApp: !!order.isWhatsApp
+              });
+            } catch (e) {
+              console.error("Error saving seed order:", e);
+            }
+          }
         }
-      ];
-      localStorage.setItem('starshines_orders', JSON.stringify(seedOrders));
-      setOrders(seedOrders);
+      }
+    } catch (error) {
+      console.error("Error loading from Firestore, falling back to local storage:", error);
+      const stored = localStorage.getItem('starshines_orders');
+      if (stored) {
+        setOrders(JSON.parse(stored));
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -53,20 +137,37 @@ export const MerchantAdmin: React.FC<MerchantAdminProps> = ({ isOpen, onClose })
     }
   }, [isOpen]);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'orders', id));
+    } catch (error) {
+      console.error("Error deleting from Firestore:", error);
+    }
     const updated = orders.filter(o => o.id !== id);
     localStorage.setItem('starshines_orders', JSON.stringify(updated));
     setOrders(updated);
   };
 
-  const handleUpdateStatus = (id: string, newStatus: Order['status']) => {
+  const handleUpdateStatus = async (id: string, newStatus: Order['status']) => {
+    try {
+      await updateDoc(doc(db, 'orders', id), { status: newStatus });
+    } catch (error) {
+      console.error("Error updating status in Firestore:", error);
+    }
     const updated = orders.map(o => o.id === id ? { ...o, status: newStatus } : o);
     localStorage.setItem('starshines_orders', JSON.stringify(updated));
     setOrders(updated);
   };
 
-  const handleClearAll = () => {
+  const handleClearAll = async () => {
     if (window.confirm('Are you sure you want to clear all orders?')) {
+      for (const order of orders) {
+        try {
+          await deleteDoc(doc(db, 'orders', order.id));
+        } catch (e) {
+          console.error("Error clearing order from Firestore:", e);
+        }
+      }
       localStorage.removeItem('starshines_orders');
       setOrders([]);
     }
@@ -169,7 +270,13 @@ export const MerchantAdmin: React.FC<MerchantAdminProps> = ({ isOpen, onClose })
         </div>
 
         {/* Orders Table Container */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#131316]">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#131316] relative min-h-[250px]">
+          {isLoading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#131316]/90 backdrop-blur-sm z-10 gap-3">
+              <div className="w-8 h-8 border-2 border-brand-pink border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs text-neutral-400 font-sans tracking-widest uppercase">Fetching Orders from Firestore...</span>
+            </div>
+          )}
           {filteredOrders.length > 0 ? (
             <div className="overflow-x-auto rounded-xl border border-neutral-800">
               <table className="w-full text-left border-collapse text-xs">

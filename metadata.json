@@ -1,6 +1,6 @@
 {
   "name": "StarShineWorld Landing Page",
-  "description": "Premium single-product landing page for StarShineWorld's Mini Ceramic Hair Straightener in Pakistan.",
+  "description": "Premium single-product landing page for StarShineWorld's Mini Ceramic Hair Straightener in Pakistan, integrated with Firebase Firestore and WhatsApp ordering.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

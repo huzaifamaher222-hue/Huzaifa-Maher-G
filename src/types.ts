@@ -9,6 +9,7 @@ export interface Order {
   status: 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled';
   createdAt: string;
   isWhatsApp?: boolean;
+  gpsLink?: string;
 }
 
 export interface Review {
