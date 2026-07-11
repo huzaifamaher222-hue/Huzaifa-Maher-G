@@ -8,6 +8,7 @@ export interface Order {
   totalPrice: number;
   status: 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled';
   createdAt: string;
+  isWhatsApp?: boolean;
 }
 
 export interface Review {

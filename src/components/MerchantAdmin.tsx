@@ -188,9 +188,16 @@ export const MerchantAdmin: React.FC<MerchantAdminProps> = ({ isOpen, onClose })
                     <tr key={order.id} className="hover:bg-neutral-900/30 transition-colors">
                       {/* ID & Date */}
                       <td className="p-4 align-top">
-                        <span className="font-mono font-bold text-white text-sm block">
-                          {order.id}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-mono font-bold text-white text-sm block">
+                            {order.id}
+                          </span>
+                          {order.isWhatsApp && (
+                            <span className="bg-emerald-950/60 text-emerald-400 font-sans text-[8px] font-black px-1.5 py-0.5 rounded border border-emerald-900/40 uppercase tracking-widest flex items-center gap-0.5 shrink-0">
+                              💬 WA
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-neutral-500 block mt-1 font-sans font-medium">
                           {order.createdAt}
                         </span>

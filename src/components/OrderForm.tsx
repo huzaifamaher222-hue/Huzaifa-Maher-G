@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ShoppingBag, Lock, Truck, CreditCard, Sparkles, Check, ChevronDown, ShieldCheck, Box, RefreshCw, Star, AlertCircle, MapPin } from 'lucide-react';
+import { ShoppingBag, Lock, Truck, CreditCard, Sparkles, Check, ChevronDown, ShieldCheck, Box, RefreshCw, Star, AlertCircle, MapPin, MessageCircle } from 'lucide-react';
 import { PAKISTANI_CITIES } from '../data';
 import { Order } from '../types';
 import straightenerHero from '../assets/images/straightener_hero_1783762299972.jpg';
@@ -21,6 +21,11 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onOrderSuccess }) => {
   const [quantity, setQuantity] = useState(1);
   const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false);
   const [citySearch, setCitySearch] = useState('');
+
+  // GPS Location link states
+  const [gpsLink, setGpsLink] = useState('');
+  const [isGettingGps, setIsGettingGps] = useState(false);
+  const [gpsError, setGpsError] = useState('');
 
   // Ref for click outside
   const cityContainerRef = useRef<HTMLDivElement>(null);
@@ -143,6 +148,93 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onOrderSuccess }) => {
       setAddress('');
       setQuantity(1);
     }, 1200);
+  };
+
+  const handleGetGps = () => {
+    if (!navigator.geolocation) {
+      setGpsError('GPS is not supported by your browser/device.');
+      return;
+    }
+    setIsGettingGps(true);
+    setGpsError('');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const link = `https://www.google.com/maps?q=${latitude},${longitude}`;
+        setGpsLink(link);
+        setIsGettingGps(false);
+      },
+      (error) => {
+        console.error('Error getting location:', error);
+        setGpsError('Unable to fetch precise location. Please allow GPS access in your browser or type your address manually.');
+        setIsGettingGps(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
+
+  const handleWhatsAppOrder = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!validate()) {
+      // Scroll to first error smoothly
+      const firstErrorKey = Object.keys(errors)[0] || 'name';
+      const el = document.getElementById(`input-${firstErrorKey}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const mapsLink = gpsLink || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address + ', ' + city)}`;
+
+    const messageText = `New Order Request
+
+Product: Mini Ceramic Hair Straightener
+Quantity: ${quantity}
+Customer Name: ${name}
+Phone: ${phone}
+Address: ${address}
+City: ${city}
+Google Maps Location: ${mapsLink}
+
+Please confirm my order.`;
+
+    const whatsappNumber = '923269772249'; // standard format
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodeURIComponent(messageText)}`;
+
+    // Create a new Order in localStorage for admin tracking
+    const orderId = 'SSW-WA-' + Math.floor(100000 + Math.random() * 900000);
+    const newOrder: Order = {
+      id: orderId,
+      name,
+      phone,
+      city,
+      address,
+      quantity,
+      totalPrice: SALE_PRICE * quantity,
+      status: 'Pending',
+      createdAt: new Date().toLocaleString(),
+      isWhatsApp: true
+    };
+
+    const existingOrdersStr = localStorage.getItem('starshines_orders');
+    const existingOrders: Order[] = existingOrdersStr ? JSON.parse(existingOrdersStr) : [];
+    localStorage.setItem('starshines_orders', JSON.stringify([newOrder, ...existingOrders]));
+
+    // Open WhatsApp
+    window.open(whatsappUrl, '_blank');
+
+    onOrderSuccess(newOrder);
+    setIsSubmitting(false);
+
+    // Reset form variables
+    setName('');
+    setPhone('');
+    setCity('');
+    setCitySearch('');
+    setAddress('');
+    setQuantity(1);
+    setGpsLink('');
   };
 
   return (
@@ -371,6 +463,31 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onOrderSuccess }) => {
                     <span>{errors.address}</span>
                   </span>
                 )}
+                
+                {/* GPS Pin Attachment Button */}
+                <div className="mt-2.5 flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleGetGps}
+                    disabled={isGettingGps}
+                    className="self-start inline-flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 font-sans text-xs font-bold py-2 px-3.5 rounded-xl border border-neutral-800 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                  >
+                    <MapPin className="w-3.5 h-3.5 text-brand-pink" />
+                    <span>{isGettingGps ? 'Fetching GPS...' : '📍 Click to Attach Live GPS Location (Recommended)'}</span>
+                  </button>
+                  {gpsLink && (
+                    <span className="text-[11px] text-emerald-400 font-sans font-bold flex items-center gap-1.5 bg-emerald-950/20 px-3 py-1.5 rounded-lg border border-emerald-900/30 self-start animate-fade-in">
+                      <Check className="w-3.5 h-3.5" />
+                      GPS Location Linked Successfully! It will be included in your WhatsApp request.
+                    </span>
+                  )}
+                  {gpsError && (
+                    <span className="text-[11px] text-amber-500 font-sans font-medium flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{gpsError}</span>
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Cash On Delivery Assurance Pill */}
@@ -382,24 +499,37 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onOrderSuccess }) => {
                 </div>
               </div>
 
-              {/* Order Button */}
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-gradient-to-r from-brand-pink-dark to-[#b81d5f] hover:brightness-110 disabled:bg-neutral-800 text-white font-bold text-sm sm:text-base tracking-widest uppercase py-4 rounded-xl shadow-lg transition-all duration-300 transform active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer border-0"
-              >
-                {isSubmitting ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Booking Your Shipment...</span>
-                  </div>
-                ) : (
-                  <>
-                    <ShoppingBag className="w-5 h-5" />
-                    <span>🛒 Book Order Now (Rs. {(SALE_PRICE * quantity).toLocaleString()})</span>
-                  </>
-                )}
-              </button>
+              {/* Order Button Grid/Stack */}
+              <div className="flex flex-col gap-3.5 mt-2">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-brand-pink-dark to-[#b81d5f] hover:brightness-110 disabled:bg-neutral-800 text-white font-bold text-sm sm:text-base tracking-widest uppercase py-4 rounded-xl shadow-lg transition-all duration-300 transform active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer border-0"
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Booking Your Shipment...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <ShoppingBag className="w-5 h-5" />
+                      <span>🛒 Book Order Now (Rs. {(SALE_PRICE * quantity).toLocaleString()})</span>
+                    </>
+                  )}
+                </button>
+
+                {/* WhatsApp Order Button */}
+                <button
+                  type="button"
+                  onClick={handleWhatsAppOrder}
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-500 hover:brightness-110 disabled:bg-neutral-800 text-white font-bold text-sm sm:text-base tracking-widest uppercase py-4 rounded-xl shadow-lg transition-all duration-300 transform active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer border-0"
+                >
+                  <MessageCircle className="w-5 h-5 fill-white/10" />
+                  <span>💬 Order on WhatsApp</span>
+                </button>
+              </div>
 
               {/* Payment Partners & Courier Logos (Requirement 5) */}
               <div className="mt-6 pt-5 border-t border-neutral-800">
