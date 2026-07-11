@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ShoppingBag, Lock, Truck, CreditCard, Sparkles, Check, ChevronDown, ShieldCheck, Box, RefreshCw, Star, AlertCircle, MapPin } from 'lucide-react';
 import { PAKISTANI_CITIES } from '../data';
 import { Order } from '../types';
@@ -22,9 +22,25 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onOrderSuccess }) => {
   const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false);
   const [citySearch, setCitySearch] = useState('');
 
+  // Ref for click outside
+  const cityContainerRef = useRef<HTMLDivElement>(null);
+
   // Error states
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (cityContainerRef.current && !cityContainerRef.current.contains(event.target as Node)) {
+        setIsCityDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Filter cities based on search
   const filteredCities = PAKISTANI_CITIES.filter(c =>
@@ -275,7 +291,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onOrderSuccess }) => {
               </div>
 
               {/* Searchable City Selector */}
-              <div className="flex flex-col relative">
+              <div ref={cityContainerRef} className="flex flex-col relative">
                 <label className="text-xs font-bold text-neutral-200 uppercase tracking-wider mb-1.5 font-sans">
                   Select Delivery City <span className="text-brand-pink">*</span>
                 </label>
