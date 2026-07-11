@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Check, Sparkles, ShoppingBag, Gift } from 'lucide-react';
+import straightenerHero from '../assets/images/straightener_hero_1783762299972.jpg';
 
 interface FrequentlyBoughtProps {
   onAddBundle: (quantity: number) => void;
@@ -13,7 +14,7 @@ export const FrequentlyBought: React.FC<FrequentlyBoughtProps> = ({ onAddBundle 
       title: 'Mini Ceramic Hair Straightener',
       price: 1399,
       originalPrice: 1699,
-      img: '/src/assets/images/straightener_hero_1783762299972.jpg',
+      img: straightenerHero,
       required: true,
       checked: true
     },

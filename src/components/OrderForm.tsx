@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShoppingBag, Lock, Truck, CreditCard, Sparkles, Check, ChevronDown, ShieldCheck, Box, RefreshCw, Star, AlertCircle, MapPin } from 'lucide-react';
 import { PAKISTANI_CITIES } from '../data';
 import { Order } from '../types';
+import straightenerHero from '../assets/images/straightener_hero_1783762299972.jpg';
 
 interface OrderFormProps {
   onOrderSuccess: (order: Order) => void;
@@ -432,7 +433,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ onOrderSuccess }) => {
             <div className="flex gap-4">
               <div className="w-16 h-16 sm:w-20 sm:h-20 bg-neutral-950 border border-neutral-800 rounded-2xl overflow-hidden shrink-0">
                 <img
-                  src="/src/assets/images/straightener_hero_1783762299972.jpg"
+                  src={straightenerHero}
                   alt="Mini Ceramic Straightener"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-cover"

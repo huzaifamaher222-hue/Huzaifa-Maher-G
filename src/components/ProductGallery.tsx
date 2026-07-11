@@ -1,6 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { ZoomIn, Sparkles, Play, X, ChevronLeft, ChevronRight, Maximize2, Shield, Flame, Percent } from 'lucide-react';
 
+// Import local image assets for reliable bundler resolution in production builds (e.g. Netlify)
+import straightenerHero from '../assets/images/straightener_hero_1783762299972.jpg';
+import straightenerLifestyle from '../assets/images/straightener_lifestyle_1783762325020.jpg';
+import straightenerPlates from '../assets/images/straightener_plates_1783762344315.jpg';
+
 export const ProductGallery: React.FC = () => {
   // CONFIGURATION: These are the main product image/video assets.
   // Anyone can easily change these URLs later.
@@ -8,7 +13,7 @@ export const ProductGallery: React.FC = () => {
     {
       id: 'asset_1',
       type: 'image',
-      src: '/src/assets/images/straightener_hero_1783762299972.jpg',
+      src: straightenerHero,
       alt: 'StarShineWorld Mini Ceramic Hair Straightener Premium Flat Lay Shot',
       badge: 'Best Seller',
       badgeColor: 'from-brand-pink-dark to-pink-600',
@@ -17,7 +22,7 @@ export const ProductGallery: React.FC = () => {
     {
       id: 'asset_2',
       type: 'image',
-      src: '/src/assets/images/straightener_lifestyle_1783762325020.jpg',
+      src: straightenerLifestyle,
       alt: 'Mini Ceramic Hair Straightener comfortably fitting inside velvet cosmetic travel pouch',
       badge: 'Premium Quality',
       badgeColor: 'from-amber-600 to-brand-gold',
@@ -26,7 +31,7 @@ export const ProductGallery: React.FC = () => {
     {
       id: 'asset_3',
       type: 'image',
-      src: '/src/assets/images/straightener_plates_1783762344315.jpg',
+      src: straightenerPlates,
       alt: 'Sleek macro shot of smooth golden tourmaline ceramic heating plates',
       badge: 'Fast Heating',
       badgeColor: 'from-emerald-600 to-teal-500',
