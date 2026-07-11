@@ -17,11 +17,44 @@ import { FloatingControls } from './components/FloatingControls';
 import { ComparisonTable } from './components/ComparisonTable';
 import { InstagramGallery } from './components/InstagramGallery';
 import { FrequentlyBought } from './components/FrequentlyBought';
+import { AdminDashboardPage } from './components/AdminDashboardPage';
 
 import { Sparkles, Clock, CheckCircle, Truck, RefreshCw, Star, ArrowRight, X, MessageSquare, ShieldCheck, Heart, AlertCircle } from 'lucide-react';
 import { Order } from './types';
 
 export default function App() {
+  // Pathname routing state
+  const [isAdminPath, setIsAdminPath] = useState(
+    window.location.pathname === '/admin' || window.location.pathname === '/admin/'
+  );
+
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setIsAdminPath(window.location.pathname === '/admin' || window.location.pathname === '/admin/');
+    };
+    window.addEventListener('popstate', handleLocationChange);
+    
+    const originalPush = window.history.pushState;
+    window.history.pushState = function (...args) {
+      const res = originalPush.apply(this, args);
+      handleLocationChange();
+      return res;
+    };
+    
+    const originalReplace = window.history.replaceState;
+    window.history.replaceState = function (...args) {
+      const res = originalReplace.apply(this, args);
+      handleLocationChange();
+      return res;
+    };
+
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.history.pushState = originalPush;
+      window.history.replaceState = originalReplace;
+    };
+  }, []);
+
   // Navigation scrolling helpers
   const scrollToCheckout = () => {
     const el = document.getElementById('checkout-section');
@@ -153,6 +186,10 @@ export default function App() {
   const handleAddBundle = () => {
     scrollToCheckout();
   };
+
+  if (isAdminPath) {
+    return <AdminDashboardPage />;
+  }
 
   return (
     <div className="min-h-screen bg-[#0B0B0C] text-neutral-200 font-sans relative antialiased selection:bg-brand-pink-dark/30">
@@ -364,7 +401,7 @@ export default function App() {
       <FloatingControls onOrderClick={scrollToCheckout} />
 
       {/* 14. Brand Footer with socials and legal links */}
-      <Footer onPolicyClick={handlePolicyOpen} onAdminClick={() => setIsAdminOpen(true)} />
+      <Footer onPolicyClick={handlePolicyOpen} onAdminClick={() => window.history.pushState({}, '', '/admin')} />
 
       {/* 15. Policy & Legal Modal panels */}
       <PolicyModals
