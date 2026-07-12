@@ -20,8 +20,11 @@ export const MerchantAdmin: React.FC<MerchantAdminProps> = ({ isOpen, onClose })
     try {
       const querySnapshot = await getDocs(collection(db, 'orders'));
       const fbOrders: Order[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (!data.phone) {
+          console.warn(`Firestore document with ID ${docSnap.id} has a missing or invalid phone field.`);
+        }
         fbOrders.push({
           id: data.id,
           name: data.name,
@@ -316,13 +319,13 @@ export const MerchantAdmin: React.FC<MerchantAdminProps> = ({ isOpen, onClose })
                           {order.name}
                         </span>
                         <a
-                          href={`https://wa.me/${order.phone.replace(/[^0-9]/g, '')}`}
+                          href={`https://wa.me/${(order.phone || "").replace(/[^0-9]/g, '')}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-emerald-400 hover:underline font-bold font-sans flex items-center gap-1 mt-1 text-[11px]"
                         >
                           <PhoneCall className="w-3 h-3 shrink-0" />
-                          {order.phone}
+                          {order.phone || "No phone"}
                         </a>
                       </td>
 

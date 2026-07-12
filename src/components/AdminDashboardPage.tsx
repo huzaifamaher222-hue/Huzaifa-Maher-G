@@ -100,6 +100,9 @@ export function AdminDashboardPage() {
       const fbOrders: Order[] = [];
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
+        if (!data.phone) {
+          console.warn(`Firestore document with ID ${docSnap.id} has a missing or invalid phone field.`);
+        }
         fbOrders.push({
           id: data.id,
           name: data.name,
@@ -552,13 +555,13 @@ export function AdminDashboardPage() {
                         {order.name}
                       </span>
                       <a
-                        href={`https://wa.me/${order.phone.replace(/[^0-9]/g, '')}`}
+                        href={`https://wa.me/${(order.phone || "").replace(/[^0-9]/g, '')}`}
                         target="_blank"
                         rel="noreferrer"
                         className="text-emerald-400 hover:underline font-bold font-sans flex items-center gap-1.5 mt-2 text-[11px]"
                       >
                         <PhoneCall className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
-                        {order.phone}
+                        {order.phone || "No phone"}
                       </a>
                     </td>
 
