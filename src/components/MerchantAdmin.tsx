@@ -25,6 +25,9 @@ export const MerchantAdmin: React.FC<MerchantAdminProps> = ({ isOpen, onClose })
         if (!data.phone) {
           console.warn(`Firestore document with ID ${docSnap.id} has a missing or invalid phone field.`);
         }
+        if (data.totalPrice === undefined || data.totalPrice === null) {
+          console.warn(`Firestore document with ID ${docSnap.id} has a missing or invalid totalPrice field.`);
+        }
         fbOrders.push({
           id: data.id,
           name: data.name,
@@ -32,7 +35,7 @@ export const MerchantAdmin: React.FC<MerchantAdminProps> = ({ isOpen, onClose })
           city: data.city,
           address: data.address,
           quantity: data.quantity || 1,
-          totalPrice: data.totalPrice,
+          totalPrice: Number(data.totalPrice ?? 0),
           status: data.status,
           createdAt: data.createdAt,
           isWhatsApp: data.isWhatsApp,
@@ -346,7 +349,7 @@ export const MerchantAdmin: React.FC<MerchantAdminProps> = ({ isOpen, onClose })
                           {order.quantity}x
                         </span>
                         <span className="text-brand-pink font-sans font-bold block mt-1 text-[11px]">
-                          Rs. {order.totalPrice.toLocaleString()}
+                          Rs. {Number(order.totalPrice ?? 0).toLocaleString()}
                         </span>
                       </td>
 

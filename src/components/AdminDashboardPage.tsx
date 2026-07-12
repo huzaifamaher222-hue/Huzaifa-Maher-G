@@ -103,6 +103,9 @@ export function AdminDashboardPage() {
         if (!data.phone) {
           console.warn(`Firestore document with ID ${docSnap.id} has a missing or invalid phone field.`);
         }
+        if (data.totalPrice === undefined || data.totalPrice === null) {
+          console.warn(`Firestore document with ID ${docSnap.id} has a missing or invalid totalPrice field.`);
+        }
         fbOrders.push({
           id: data.id,
           name: data.name,
@@ -110,7 +113,7 @@ export function AdminDashboardPage() {
           city: data.city,
           address: data.address,
           quantity: data.quantity || 1,
-          totalPrice: data.totalPrice,
+          totalPrice: Number(data.totalPrice ?? 0),
           status: data.status,
           createdAt: data.createdAt,
           isWhatsApp: data.isWhatsApp,
@@ -422,7 +425,7 @@ export function AdminDashboardPage() {
           <span className="text-[9px] font-bold text-brand-pink-dark uppercase tracking-wider block">💰 Delivered Net Income</span>
           <div className="flex items-baseline gap-1 mt-2">
             <span className="text-brand-pink text-xs font-black">Rs.</span>
-            <span className="font-serif text-xl sm:text-2xl font-extrabold text-white">{totalRevenue.toLocaleString()}</span>
+            <span className="font-serif text-xl sm:text-2xl font-extrabold text-white">{(totalRevenue ?? 0).toLocaleString()}</span>
           </div>
         </div>
       </section>
@@ -595,7 +598,7 @@ export function AdminDashboardPage() {
                         {order.quantity}x
                       </span>
                       <span className="text-brand-pink font-sans font-black block mt-1 text-[11px]">
-                        Rs. {order.totalPrice.toLocaleString()}
+                        Rs. {Number(order.totalPrice ?? 0).toLocaleString()}
                       </span>
                     </td>
 
